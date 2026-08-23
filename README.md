@@ -2,7 +2,6 @@
 
 > Uma plataforma moderna e ultra-personalizável de Link na Bio e Portfólio interativo inspirada no **Bento Grid** (`bento.me` / `own.page`).
 
-![meFolio Banner](https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop)
 
 ---
 
@@ -17,7 +16,6 @@
   - **Upload de MP3 do PC**: Carregue arquivos de áudio locais para tocar nativamente.
   - **Spotify Embed**: Suporte ao código oficial de incorporação (`<iframe>`) com streaming.
   - **YouTube Áudio**: Prévia de áudio com capa e controles dedicados.
-  - **4 Presets Prontos**: Trilhas relaxantes de Lofi, Synthwave e Acústico em 1 clique.
   - Equalizador visual com ondas sonoras e controle deslizante de volume.
 
 - ⚡ **Integração Automática com GitHub**:
@@ -32,11 +30,7 @@
   - Tags de habilidades coloridas e ícones de redes sociais com as cores oficiais das marcas.
 
 - 📊 **Analytics Privado**:
-  - Contagem de visitas à página, cliques por card, cópias de chave Pix e mensagens.
-
-- 🔒 **Persistência & Backup Local**:
-  - Salvamento automático em tempo real no `localStorage`.
-  - Exportação e importação completa em arquivo `.json`.
+  - Contagem de visitas à página, cliques por card, doações e contato.
 
 ---
 
