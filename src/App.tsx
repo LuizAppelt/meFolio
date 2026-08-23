@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Settings, Share2, Move, Eye, Palette } from 'lucide-react';
+import { Settings, Share2, Move, Eye, Palette, Lock, UserCheck } from 'lucide-react';
 import type { 
   UserProfile, 
   AnyBentoCard, 
@@ -82,6 +82,9 @@ export function App() {
     return saved ? JSON.parse(saved) : defaultAnalytics;
   });
 
+  // Visitor Preview Mode
+  const [isVisitorMode, setIsVisitorMode] = useState(false);
+
   // Track page visit on mount
   useEffect(() => {
     setAnalytics(prev => {
@@ -95,8 +98,9 @@ export function App() {
     });
   }, []);
 
-  // Update browser favicon dynamically if user logo exists
+  // Update browser title & favicon dynamically
   useEffect(() => {
+    document.title = `${profile.name} (${profile.handle}) — meFolio`;
     if (profile.logoUrl) {
       let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
       if (!link) {
@@ -106,7 +110,7 @@ export function App() {
       }
       link.href = profile.logoUrl;
     }
-  }, [profile.logoUrl]);
+  }, [profile.name, profile.handle, profile.logoUrl]);
 
   // Active filters and expansion
   const [activeCategory, setActiveCategory] = useState<CategoryFilterType>('all');
@@ -189,20 +193,18 @@ export function App() {
   const handleOpenAddCard = () => {
     const defaultNewCard: AnyBentoCard = {
       id: `card-${Date.now()}`,
-      type: 'content_review',
+      type: 'tech_stack',
       size: '2x1',
       order: cards.length + 1,
-      category: 'reviews',
-      platform: 'instagram',
-      platformLabel: 'Post em Destaque',
-      title: 'Novo Conteúdo em Destaque',
-      subtitle: 'Review / Prévia',
-      url: 'https://instagram.com',
-      coverImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop',
-      shortReview: 'Resumo rápido do que o seguidor vai encontrar.',
-      fullReview: 'Texto aprofundado com os principais ensinamentos.',
-      highlights: ['Ponto de Destaque 1', 'Ponto de Destaque 2'],
-      buttonText: 'Acessar Conteúdo'
+      category: 'career',
+      title: 'Tech Arsenal',
+      subtitle: 'Tecnologias & Ferramentas',
+      skills: [
+        { id: 's1', name: 'React', level: 'Especialista' },
+        { id: 's2', name: 'TypeScript', level: 'Avançado' },
+        { id: 's3', name: 'Tailwind CSS', level: 'Especialista' },
+        { id: 's4', name: 'Figma', level: 'Especialista' }
+      ]
     };
 
     setCardModalState({
@@ -302,24 +304,6 @@ export function App() {
     setExpandedCardId(prev => (prev === cardId ? null : cardId));
   };
 
-  // Compute category counts
-  const categoryCounts = useMemo(() => {
-    const counts: Record<CategoryFilterType, number> = {
-      all: cards.length,
-      reviews: 0,
-      projects: 0,
-      socials: 0,
-      media: 0
-    };
-    cards.forEach(c => {
-      if (c.type === 'content_review' || c.type === 'quick_action') counts.reviews++;
-      if (c.type === 'github' || c.type === 'stats' || (c.type === 'content_review' && c.platform === 'behance')) counts.projects++;
-      if (c.type === 'social') counts.socials++;
-      if (c.type === 'media' || (c.type === 'content_review' && c.platform === 'youtube')) counts.media++;
-    });
-    return counts;
-  }, [cards]);
-
   // Current typography family strings
   const currentHeadingFont = availableFonts.find(f => f.id === typography.headingFontId)?.family || "'Plus Jakarta Sans', sans-serif";
   const currentBodyFont = availableFonts.find(f => f.id === typography.bodyFontId)?.family || "'Plus Jakarta Sans', sans-serif";
@@ -405,62 +389,92 @@ export function App() {
       )}
 
       {/* Top Navigation Control Bar */}
-      <header className="sticky top-4 z-40 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4 flex items-center justify-end pointer-events-none">
-        <div className="flex items-center gap-2 pointer-events-auto">
-          
-          {/* Unified Themes Button */}
+      <header className="sticky top-4 z-40 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4 flex items-center justify-between pointer-events-none">
+        {/* Visitor Mode Indicator / Mode Switch */}
+        <div className="pointer-events-auto">
           <button
-            onClick={() => setIsThemeOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold shadow-xl transition-all hover:scale-105"
-            title="Escolher estilo ou criar tema"
-          >
-            <Palette className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="hidden sm:inline">Temas</span>
-          </button>
-
-          {/* Direct Visual Grid Adjust Toggle */}
-          <button
-            onClick={() => setIsVisualEditMode(!isVisualEditMode)}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl backdrop-blur-xl border text-xs font-semibold shadow-xl transition-all hover:scale-105 ${
-              isVisualEditMode
-                ? 'bg-amber-500 text-zinc-950 border-amber-400 font-bold ring-2 ring-amber-400/50'
+            onClick={() => {
+              setIsVisitorMode(!isVisitorMode);
+              if (!isVisitorMode) setIsVisualEditMode(false);
+            }}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl backdrop-blur-xl border text-xs font-bold shadow-xl transition-all hover:scale-105 active:scale-95 ${
+              isVisitorMode
+                ? 'bg-emerald-500 text-zinc-950 border-emerald-400 ring-2 ring-emerald-400/40'
                 : 'bg-zinc-900/80 border-zinc-800 text-zinc-300 hover:text-white'
             }`}
-            title="Adicionar, excluir e arrastar blocos diretamente na grade"
+            title="Alternar entre visualização pública do visitante e modo de edição do dono"
           >
-            {isVisualEditMode ? <Eye className="w-3.5 h-3.5" /> : <Move className="w-3.5 h-3.5 text-amber-400" />}
-            <span className="hidden sm:inline">{isVisualEditMode ? 'Visualizar Página' : 'Ajustar Grade'}</span>
-          </button>
-
-          {/* Share Button */}
-          {visibility.showShareButton && (
-            <button
-              onClick={() => setIsShareOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold shadow-xl transition-all hover:scale-105"
-              title="Compartilhar página e QR Code com logo"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Compartilhar</span>
-            </button>
-          )}
-
-          {/* General Customizer Button */}
-          <button
-            onClick={() => setIsEditOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-semibold shadow-xl shadow-indigo-950/40 transition-all hover:scale-105 active:scale-95"
-            title="Abrir Central de Personalização"
-          >
-            <Settings className="w-3.5 h-3.5" />
-            <span>Personalizar</span>
+            {isVisitorMode ? (
+              <>
+                <UserCheck className="w-3.5 h-3.5" />
+                <span>👁️ Visão do Visitante (Ativa)</span>
+              </>
+            ) : (
+              <>
+                <Lock className="w-3.5 h-3.5 text-indigo-400" />
+                <span>✏️ Modo Dono</span>
+              </>
+            )}
           </button>
         </div>
+
+        {/* Owner Controls (Hidden in Visitor Mode) */}
+        {!isVisitorMode && (
+          <div className="flex items-center gap-2 pointer-events-auto">
+            {/* Unified Themes Button */}
+            <button
+              onClick={() => setIsThemeOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold shadow-xl transition-all hover:scale-105"
+              title="Escolher estilo ou criar tema"
+            >
+              <Palette className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="hidden sm:inline">Temas</span>
+            </button>
+
+            {/* Direct Visual Grid Adjust Toggle */}
+            <button
+              onClick={() => setIsVisualEditMode(!isVisualEditMode)}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl backdrop-blur-xl border text-xs font-semibold shadow-xl transition-all hover:scale-105 ${
+                isVisualEditMode
+                  ? 'bg-amber-500 text-zinc-950 border-amber-400 font-bold ring-2 ring-amber-400/50'
+                  : 'bg-zinc-900/80 border-zinc-800 text-zinc-300 hover:text-white'
+              }`}
+              title="Adicionar, excluir e arrastar blocos diretamente na grade"
+            >
+              {isVisualEditMode ? <Eye className="w-3.5 h-3.5" /> : <Move className="w-3.5 h-3.5 text-amber-400" />}
+              <span className="hidden sm:inline">{isVisualEditMode ? 'Visualizar Página' : 'Ajustar Grade'}</span>
+            </button>
+
+            {/* Share Button */}
+            {visibility.showShareButton && (
+              <button
+                onClick={() => setIsShareOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold shadow-xl transition-all hover:scale-105"
+                title="Compartilhar página e QR Code com logo"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Compartilhar</span>
+              </button>
+            )}
+
+            {/* General Customizer Button */}
+            <button
+              onClick={() => setIsEditOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-semibold shadow-xl shadow-indigo-950/40 transition-all hover:scale-105 active:scale-95"
+              title="Abrir Central de Personalização"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>Personalizar</span>
+            </button>
+          </div>
+        )}
       </header>
 
       {/* Main Container: 1/3 Fixed Left Sidebar & 2/3 Scrollable Right Content */}
       <div className="relative z-10 max-w-7xl mx-auto flex flex-col lg:flex-row items-start min-h-screen">
         
         {/* LEFT COLUMN: Fixed Full-Height 1/3 Sidebar */}
-        <div className="w-full lg:w-1/3 shrink-0">
+        <div className="w-full lg:w-1/3 shrink-0 p-4 sm:p-6 lg:p-8">
           <ProfileHeader 
             profile={profile} 
             theme={activeThemeObject}
@@ -481,7 +495,6 @@ export function App() {
               activeCategory={activeCategory}
               onSelectCategory={setActiveCategory}
               theme={activeThemeObject}
-              counts={categoryCounts}
             />
           )}
 
@@ -490,7 +503,7 @@ export function App() {
             cards={cards} 
             theme={activeThemeObject}
             activeCategory={activeCategory}
-            isVisualEditMode={isVisualEditMode}
+            isVisualEditMode={!isVisitorMode && isVisualEditMode}
             expandedCardId={expandedCardId}
             onToggleExpand={handleToggleExpand}
             onResizeCard={handleResizeCard}

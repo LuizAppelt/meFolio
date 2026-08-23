@@ -13,6 +13,9 @@ import { MediaCard } from './cards/MediaCard';
 import { GithubCard } from './cards/GithubCard';
 import { StatsCard } from './cards/StatsCard';
 import { QuickActionCard } from './cards/QuickActionCard';
+import { TimelineCard } from './cards/TimelineCard';
+import { TechStackCard } from './cards/TechStackCard';
+import { TiltCardWrapper } from './effects/TiltCardWrapper';
 
 interface BentoGridProps {
   cards: AnyBentoCard[];
@@ -51,9 +54,10 @@ export const BentoGrid: React.FC<BentoGridProps> = ({
   const filteredCards = cards.filter((card) => {
     if (activeCategory === 'all') return true;
     if (activeCategory === 'reviews') return card.type === 'content_review' || card.type === 'quick_action';
-    if (activeCategory === 'projects') return card.type === 'github' || card.type === 'stats' || (card.type === 'content_review' && card.platform === 'behance');
+    if (activeCategory === 'projects') return card.type === 'github' || card.type === 'stats' || card.type === 'tech_stack' || (card.type === 'content_review' && card.platform === 'behance');
     if (activeCategory === 'socials') return card.type === 'social';
     if (activeCategory === 'media') return card.type === 'media' || (card.type === 'content_review' && card.platform === 'youtube');
+    if (activeCategory === 'career') return card.type === 'timeline' || card.type === 'tech_stack';
     return true;
   });
 
@@ -209,6 +213,26 @@ export const BentoGrid: React.FC<BentoGridProps> = ({
           />
         );
 
+      case 'timeline':
+        return (
+          <TimelineCard
+            card={card}
+            theme={theme}
+            isVisualEditMode={isVisualEditMode}
+            onResize={(size) => onResizeCard?.(card.id, size)}
+          />
+        );
+
+      case 'tech_stack':
+        return (
+          <TechStackCard
+            card={card}
+            theme={theme}
+            isVisualEditMode={isVisualEditMode}
+            onResize={(size) => onResizeCard?.(card.id, size)}
+          />
+        );
+
       default:
         return null;
     }
@@ -307,10 +331,13 @@ export const BentoGrid: React.FC<BentoGridProps> = ({
                   </div>
                 )}
 
-                {/* Card Component */}
-                <div className="w-full h-full">
+                {/* Card Component with 3D Tilt & Spotlight Wrap */}
+                <TiltCardWrapper 
+                  disabled={isVisualEditMode || isExpanded} 
+                  glowColor={theme.glowEffect || 'rgba(99, 102, 241, 0.18)'}
+                >
                   {renderCardContent(card)}
-                </div>
+                </TiltCardWrapper>
               </motion.div>
             );
           })}
@@ -332,7 +359,7 @@ export const BentoGrid: React.FC<BentoGridProps> = ({
                 Adicionar Novo Bloco
               </h4>
               <p className="text-xs text-zinc-400 mt-0.5">
-                Review, Rede, GitHub, Mídia ou Doação
+                Timeline, Tech Stack, Review, GitHub ou Doação
               </p>
             </motion.button>
           )}

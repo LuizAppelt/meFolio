@@ -202,71 +202,59 @@ export const initialCards: AnyBentoCard[] = [
   },
   {
     id: 'card-2',
-    type: 'social',
-    size: '1x1',
+    type: 'tech_stack',
+    size: '2x1',
     order: 2,
-    category: 'socials',
-    platform: 'instagram',
-    title: 'Instagram',
-    handleOrCount: '@alexandre.dev',
-    url: 'https://instagram.com',
-    customColor: '#E1306C'
+    category: 'career',
+    title: 'Tech Arsenal',
+    subtitle: 'Ferramentas & Tecnologias',
+    skills: [
+      { id: 'sk-1', name: 'React', level: 'Especialista' },
+      { id: 'sk-2', name: 'TypeScript', level: 'Avançado' },
+      { id: 'sk-3', name: 'Next.js', level: 'Avançado' },
+      { id: 'sk-4', name: 'Tailwind CSS', level: 'Especialista' },
+      { id: 'sk-5', name: 'Figma', level: 'Especialista' },
+      { id: 'sk-6', name: 'Node.js', level: 'Intermediário' }
+    ]
   },
   {
     id: 'card-3',
-    type: 'social',
-    size: '1x1',
+    type: 'timeline',
+    size: '1x2',
     order: 3,
-    category: 'socials',
-    platform: 'tiktok',
-    title: 'TikTok',
-    handleOrCount: '58.4k seguidores',
-    url: 'https://tiktok.com',
-    customColor: '#00F2FE'
+    category: 'career',
+    title: 'Trajetória',
+    subtitle: 'Linha do Tempo',
+    items: [
+      {
+        id: 't-1',
+        period: '2024 — Presente',
+        role: 'Lead UI/UX & Developer',
+        company: 'Freelance & Studio',
+        description: 'Construindo experiências e interfaces digitais de alta conversão.',
+        current: true
+      },
+      {
+        id: 't-2',
+        period: '2022 — 2024',
+        role: 'Senior Frontend Engineer',
+        company: 'ScaleTech',
+        description: 'Desenvolvimento de dashboards React e Design Systems escaláveis.'
+      },
+      {
+        id: 't-3',
+        period: '2020 — 2022',
+        role: 'Product Designer',
+        company: 'Creative Labs',
+        description: 'Design de produto, prototipagem avançada e testes de usabilidade.'
+      }
+    ]
   },
   {
     id: 'card-4',
-    type: 'content_review',
-    size: '2x1',
-    order: 4,
-    category: 'projects',
-    platform: 'behance',
-    platformLabel: 'Case Study',
-    badge: '💎 Portfólio',
-    title: 'Redesign do App FlowPay',
-    subtitle: 'Estudo de caso completo no Behance',
-    url: 'https://behance.net',
-    coverImage: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=800&auto=format&fit=crop',
-    gallery: [
-      'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=800&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=800&auto=format&fit=crop'
-    ],
-    shortReview: 'Redesenho de um app bancário simplificando o fluxo de transferências de 5 para apenas 2 toques.',
-    fullReview: 'O case study do FlowPay detalha todo o processo de Design Thinking, desde as 30 entrevistas de usuários até a entrega do Design System completo em Figma com protótipos de alta fidelidade.',
-    highlights: [
-      'Design System com 120+ componentes',
-      'Testes de usabilidade A/B',
-      'Prototipagem interativa'
-    ],
-    rating: 5,
-    buttonText: 'Ver Projeto no Behance'
-  },
-  {
-    id: 'card-5',
-    type: 'media',
-    size: '1x2',
-    order: 5,
-    category: 'media',
-    mediaType: 'youtube',
-    embedUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
-    title: 'Vídeo: Criando um App do Zero',
-    description: 'Aprenda na prática como estruturar seu projeto moderno.'
-  },
-  {
-    id: 'card-6',
     type: 'github',
     size: '2x1',
-    order: 6,
+    order: 4,
     category: 'projects',
     repoName: 'bento-link-starter',
     repoOwner: 'alexandresouza',
@@ -279,6 +267,30 @@ export const initialCards: AnyBentoCard[] = [
     showForks: true,
     showLanguage: true,
     topics: ['react', 'tailwind', 'bento', 'portfolio']
+  },
+  {
+    id: 'card-5',
+    type: 'social',
+    size: '1x1',
+    order: 5,
+    category: 'socials',
+    platform: 'instagram',
+    title: 'Instagram',
+    handleOrCount: '@alexandre.dev',
+    url: 'https://instagram.com',
+    customColor: '#E1306C'
+  },
+  {
+    id: 'card-6',
+    type: 'social',
+    size: '1x1',
+    order: 6,
+    category: 'socials',
+    platform: 'tiktok',
+    title: 'TikTok',
+    handleOrCount: '58.4k seguidores',
+    url: 'https://tiktok.com',
+    customColor: '#00F2FE'
   },
   {
     id: 'card-7',

@@ -13,10 +13,19 @@ import {
   Upload, 
   Sparkles, 
   Loader2, 
-  Star,
-  Check
+  Check,
+  Briefcase,
+  Cpu,
+  Plus
 } from 'lucide-react';
-import type { AnyBentoCard, BentoCardSize, BentoCardType, SocialPlatform } from '../../types';
+import type { 
+  AnyBentoCard, 
+  BentoCardSize, 
+  BentoCardType, 
+  SocialPlatform,
+  TimelineItem,
+  TechSkillItem
+} from '../../types';
 import { fetchGithubRepoData } from '../../utils/github';
 
 interface CardEditModalProps {
@@ -27,6 +36,12 @@ interface CardEditModalProps {
   onDelete?: (cardId: string) => void;
   onClose: () => void;
 }
+
+const techPresets = [
+  'React', 'Next.js', 'TypeScript', 'Tailwind CSS', 'Figma',
+  'Node.js', 'Python', 'Docker', 'PostgreSQL', 'GraphQL',
+  'Vue.js', 'Git & GitHub', 'UI/UX Design', 'AWS'
+];
 
 export const CardEditModal: React.FC<CardEditModalProps> = ({
   isOpen,
@@ -46,7 +61,7 @@ export const CardEditModal: React.FC<CardEditModalProps> = ({
 
   if (!isOpen || !formData) return null;
 
-  // File Upload Helper (converts selected local image to base64 Data URL)
+  // File Upload Helper
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, fieldSetter: (dataUrl: string) => void) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -86,7 +101,7 @@ export const CardEditModal: React.FC<CardEditModalProps> = ({
       setGithubSuccessMsg(true);
       setTimeout(() => setGithubSuccessMsg(false), 3000);
     } else {
-      alert('Não foi possível encontrar o repositório no GitHub. Verifique o link digitado (ex: facebook/react ou https://github.com/facebook/react).');
+      alert('Não foi possível encontrar o repositório no GitHub. Verifique o link digitado.');
     }
   };
 
@@ -145,6 +160,51 @@ export const CardEditModal: React.FC<CardEditModalProps> = ({
         showStars: true,
         showForks: true,
         showLanguage: true
+      };
+    } else if (newType === 'timeline') {
+      newCard = {
+        id: baseId,
+        type: 'timeline',
+        size: '1x2',
+        order: baseOrder,
+        category: 'career',
+        title: 'Trajetória & Carreira',
+        subtitle: 'Evolução Profissional',
+        items: [
+          {
+            id: `time-${Date.now()}-1`,
+            period: '2024 — Presente',
+            role: 'Lead UI/UX & Developer',
+            company: 'Tech Studio',
+            description: 'Liderando arquitetura de interfaces, Design Systems e aplicações React.',
+            current: true
+          },
+          {
+            id: `time-${Date.now()}-2`,
+            period: '2022 — 2024',
+            role: 'Senior Frontend Developer',
+            company: 'Digital Solutions',
+            description: 'Desenvolvimento de produtos digitais escaláveis com TypeScript e Next.js.'
+          }
+        ]
+      };
+    } else if (newType === 'tech_stack') {
+      newCard = {
+        id: baseId,
+        type: 'tech_stack',
+        size: '2x1',
+        order: baseOrder,
+        category: 'career',
+        title: 'Tech Arsenal',
+        subtitle: 'Ferramentas & Tecnologias',
+        skills: [
+          { id: 'sk-1', name: 'React', level: 'Especialista' },
+          { id: 'sk-2', name: 'TypeScript', level: 'Avançado' },
+          { id: 'sk-3', name: 'Next.js', level: 'Avançado' },
+          { id: 'sk-4', name: 'Tailwind CSS', level: 'Especialista' },
+          { id: 'sk-5', name: 'Figma', level: 'Especialista' },
+          { id: 'sk-6', name: 'Node.js', level: 'Intermediário' }
+        ]
       };
     } else if (newType === 'media') {
       newCard = {
@@ -212,6 +272,50 @@ export const CardEditModal: React.FC<CardEditModalProps> = ({
     });
   };
 
+  // Timeline handlers
+  const handleAddTimelineItem = () => {
+    if (formData.type !== 'timeline') return;
+    const newItem: TimelineItem = {
+      id: `time-${Date.now()}`,
+      period: '2023 — 2024',
+      role: 'Novo Cargo',
+      company: 'Empresa / Projeto',
+      description: 'Principais realizações e responsabilidades.',
+      current: false
+    };
+    setFormData({ ...formData, items: [...formData.items, newItem] });
+  };
+
+  const handleUpdateTimelineItem = (index: number, updatedItem: TimelineItem) => {
+    if (formData.type !== 'timeline') return;
+    const newItems = [...formData.items];
+    newItems[index] = updatedItem;
+    setFormData({ ...formData, items: newItems });
+  };
+
+  const handleRemoveTimelineItem = (index: number) => {
+    if (formData.type !== 'timeline') return;
+    setFormData({ ...formData, items: formData.items.filter((_, idx) => idx !== index) });
+  };
+
+  // Tech Stack handlers
+  const handleAddTechSkill = (name: string = 'Nova Skill') => {
+    if (formData.type !== 'tech_stack') return;
+    if (formData.skills.some(s => s.name.toLowerCase() === name.toLowerCase())) return;
+
+    const newSkill: TechSkillItem = {
+      id: `sk-${Date.now()}-${Math.random()}`,
+      name,
+      level: 'Avançado'
+    };
+    setFormData({ ...formData, skills: [...formData.skills, newSkill] });
+  };
+
+  const handleRemoveTechSkill = (id: string) => {
+    if (formData.type !== 'tech_stack') return;
+    setFormData({ ...formData, skills: formData.skills.filter(s => s.id !== id) });
+  };
+
   const handleSaveSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData) {
@@ -257,11 +361,13 @@ export const CardEditModal: React.FC<CardEditModalProps> = ({
             {isNew && (
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 mb-2">Tipo de Bloco</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {[
+                    { type: 'timeline' as BentoCardType, label: 'Trajetória', icon: <Briefcase className="w-4 h-4" /> },
+                    { type: 'tech_stack' as BentoCardType, label: 'Tech Stack', icon: <Cpu className="w-4 h-4" /> },
+                    { type: 'github' as BentoCardType, label: 'GitHub Repo', icon: <FolderGit2 className="w-4 h-4" /> },
                     { type: 'content_review' as BentoCardType, label: 'Review / Post', icon: <Layers className="w-4 h-4" /> },
                     { type: 'social' as BentoCardType, label: 'Rede Social', icon: <Share2 className="w-4 h-4" /> },
-                    { type: 'github' as BentoCardType, label: 'GitHub Repo', icon: <FolderGit2 className="w-4 h-4" /> },
                     { type: 'media' as BentoCardType, label: 'Vídeo / Player', icon: <Play className="w-4 h-4" /> },
                     { type: 'stats' as BentoCardType, label: 'Estatística', icon: <BarChart3 className="w-4 h-4" /> },
                     { type: 'quick_action' as BentoCardType, label: 'Doação / Apoio', icon: <Heart className="w-4 h-4" /> },
@@ -306,10 +412,196 @@ export const CardEditModal: React.FC<CardEditModalProps> = ({
             </div>
 
             {/* FORM FIELDS BY TYPE */}
-            {/* 1. GITHUB CARD (COM AUTO-FETCH E BANNER DO PC) */}
+
+            {/* 1. TIMELINE / TRAJETÓRIA */}
+            {formData.type === 'timeline' && (
+              <div className="space-y-4 pt-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-300 mb-1">Título do Bloco</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-300 mb-1">Subtítulo</label>
+                    <input
+                      type="text"
+                      value={formData.subtitle || ''}
+                      onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">
+                      Cargos & Experiências
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleAddTimelineItem}
+                      className="px-2.5 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Adicionar Cargo</span>
+                    </button>
+                  </div>
+
+                  {formData.items.map((item, idx) => (
+                    <div key={item.id || idx} className="p-3.5 rounded-2xl bg-zinc-800/50 border border-zinc-700 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white">Experiência #{idx + 1}</span>
+                        <div className="flex items-center gap-2">
+                          <label className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={item.current || false}
+                              onChange={(e) => handleUpdateTimelineItem(idx, { ...item, current: e.target.checked })}
+                              className="rounded accent-emerald-500"
+                            />
+                            <span>Cargo Atual</span>
+                          </label>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTimelineItem(idx)}
+                            className="p-1 rounded text-zinc-400 hover:text-red-400"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          placeholder="Período (Ex: 2024 — Presente)"
+                          value={item.period}
+                          onChange={(e) => handleUpdateTimelineItem(idx, { ...item, period: e.target.value })}
+                          className="bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-white"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Empresa / Estúdio"
+                          value={item.company}
+                          onChange={(e) => handleUpdateTimelineItem(idx, { ...item, company: e.target.value })}
+                          className="bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-white"
+                        />
+                      </div>
+
+                      <input
+                        type="text"
+                        placeholder="Cargo (Ex: Senior Frontend Developer)"
+                        value={item.role}
+                        onChange={(e) => handleUpdateTimelineItem(idx, { ...item, role: e.target.value })}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-white"
+                      />
+
+                      <textarea
+                        rows={2}
+                        placeholder="Breve descrição das conquistas (Opcional)"
+                        value={item.description || ''}
+                        onChange={(e) => handleUpdateTimelineItem(idx, { ...item, description: e.target.value })}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-white"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 2. TECH STACK / ARSENAL */}
+            {formData.type === 'tech_stack' && (
+              <div className="space-y-4 pt-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-300 mb-1">Título do Bloco</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-300 mb-1">Subtítulo</label>
+                    <input
+                      type="text"
+                      value={formData.subtitle || ''}
+                      onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Presets rápidos em 1 clique */}
+                <div className="p-3 rounded-2xl bg-zinc-800/40 border border-zinc-700/60 space-y-2">
+                  <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                    ⚡ Clique para adicionar rapidamente:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {techPresets.map((preset) => {
+                      const alreadyAdded = formData.skills.some(s => s.name.toLowerCase() === preset.toLowerCase());
+                      return (
+                        <button
+                          key={preset}
+                          type="button"
+                          disabled={alreadyAdded}
+                          onClick={() => handleAddTechSkill(preset)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-mono font-semibold transition-all ${
+                            alreadyAdded
+                              ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+                              : 'bg-zinc-800 hover:bg-cyan-600 text-zinc-200 hover:text-white border border-zinc-700'
+                          }`}
+                        >
+                          + {preset}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Lista de Skills Ativas */}
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">
+                    Tecnologias no Bloco ({formData.skills.length})
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {formData.skills.map((skill) => (
+                      <div
+                        key={skill.id}
+                        className="p-2 rounded-xl bg-zinc-800/60 border border-zinc-700 flex items-center justify-between text-xs"
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="font-bold text-white font-mono">{skill.name}</span>
+                          <span className="text-[10px] text-indigo-400 font-semibold">{skill.level || 'Avançado'}</span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTechSkill(skill.id)}
+                          className="text-zinc-400 hover:text-red-400 p-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 3. GITHUB CARD */}
             {formData.type === 'github' && (
               <div className="space-y-3 pt-2">
-                {/* Auto-Fetch Tool */}
                 <div className="p-3.5 rounded-2xl bg-indigo-950/30 border border-indigo-800/50 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
@@ -347,7 +639,6 @@ export const CardEditModal: React.FC<CardEditModalProps> = ({
                   </div>
                 </div>
 
-                {/* Banner do Projeto (Upload ou Link) */}
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1">
                     Banner / Screenshot do Projeto (Opcional)
@@ -435,41 +726,10 @@ export const CardEditModal: React.FC<CardEditModalProps> = ({
                     />
                   </div>
                 </div>
-
-                {/* Visibilidade das métricas */}
-                <div className="p-3 rounded-xl bg-zinc-800/40 border border-zinc-700/60 flex items-center justify-between text-xs text-zinc-300">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.showStars !== false}
-                      onChange={(e) => setFormData({ ...formData, showStars: e.target.checked })}
-                      className="rounded accent-indigo-500"
-                    />
-                    <span>Mostrar Estrelas</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.showForks !== false}
-                      onChange={(e) => setFormData({ ...formData, showForks: e.target.checked })}
-                      className="rounded accent-indigo-500"
-                    />
-                    <span>Mostrar Forks</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.showLanguage !== false}
-                      onChange={(e) => setFormData({ ...formData, showLanguage: e.target.checked })}
-                      className="rounded accent-indigo-500"
-                    />
-                    <span>Mostrar Linguagem</span>
-                  </label>
-                </div>
               </div>
             )}
 
-            {/* 2. CONTENT REVIEW (COM UPLOAD DE IMAGEM DO PC E CLIQUE DE ESTRELAS) */}
+            {/* 4. CONTENT REVIEW */}
             {formData.type === 'content_review' && (
               <div className="space-y-3 pt-2">
                 <div>
@@ -505,7 +765,6 @@ export const CardEditModal: React.FC<CardEditModalProps> = ({
                   </div>
                 </div>
 
-                {/* Imagem de Capa com Upload do PC */}
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1">Imagem de Capa</label>
                   <div className="flex items-center gap-2">
@@ -530,45 +789,12 @@ export const CardEditModal: React.FC<CardEditModalProps> = ({
                   </div>
                 </div>
 
-                {/* Avaliação por Estrelas */}
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">Classificação / Nota</label>
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, rating: star })}
-                        className="p-1 hover:scale-110 transition-transform"
-                      >
-                        <Star
-                          className={`w-5 h-5 ${
-                            (formData.rating || 5) >= star
-                              ? 'text-amber-400 fill-amber-400'
-                              : 'text-zinc-600'
-                          }`}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1">Resumo Rápido</label>
                   <textarea
                     rows={2}
                     value={formData.shortReview}
                     onChange={(e) => setFormData({ ...formData, shortReview: e.target.value })}
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">Review Completo</label>
-                  <textarea
-                    rows={3}
-                    value={formData.fullReview}
-                    onChange={(e) => setFormData({ ...formData, fullReview: e.target.value })}
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-white"
                   />
                 </div>
@@ -597,7 +823,7 @@ export const CardEditModal: React.FC<CardEditModalProps> = ({
               </div>
             )}
 
-            {/* 3. SOCIAL CARD */}
+            {/* 5. SOCIAL CARD */}
             {formData.type === 'social' && (
               <div className="space-y-3 pt-2">
                 <div className="grid grid-cols-2 gap-3">
@@ -674,7 +900,7 @@ export const CardEditModal: React.FC<CardEditModalProps> = ({
               </div>
             )}
 
-            {/* 4. MEDIA (YOUTUBE / SPOTIFY) */}
+            {/* 6. MEDIA */}
             {formData.type === 'media' && (
               <div className="space-y-3 pt-2">
                 <div>
@@ -699,20 +925,10 @@ export const CardEditModal: React.FC<CardEditModalProps> = ({
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-white"
                   />
                 </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">Descrição</label>
-                  <input
-                    type="text"
-                    value={formData.description || ''}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-white"
-                  />
-                </div>
               </div>
             )}
 
-            {/* 5. STATS */}
+            {/* 7. STATS */}
             {formData.type === 'stats' && (
               <div className="space-y-3 pt-2">
                 <div className="grid grid-cols-2 gap-3">
@@ -739,21 +955,10 @@ export const CardEditModal: React.FC<CardEditModalProps> = ({
                     />
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">Subtexto</label>
-                  <input
-                    type="text"
-                    placeholder="Ex: Impacto este mês"
-                    value={formData.subtitle || ''}
-                    onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-white"
-                  />
-                </div>
               </div>
             )}
 
-            {/* 6. QUICK ACTION (DOAÇÃO) */}
+            {/* 8. QUICK ACTION */}
             {formData.type === 'quick_action' && (
               <div className="space-y-3 pt-2">
                 <div>
@@ -763,16 +968,6 @@ export const CardEditModal: React.FC<CardEditModalProps> = ({
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1">Subtítulo / Mensagem</label>
-                  <input
-                    type="text"
-                    value={formData.subtitle || ''}
-                    onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-white"
                   />
                 </div>

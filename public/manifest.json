@@ -1,0 +1,18 @@
+{
+  "name": "meFolio — Bento Grid Bio & Portfolio",
+  "short_name": "meFolio",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#08090d",
+  "theme_color": "#6366f1",
+  "description": "Uma plataforma moderna de Link na Bio e Portfólio Bento Grid ultra-personalizável.",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

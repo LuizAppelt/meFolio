@@ -4,8 +4,33 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366f1'><path d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/><path d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="description" content="Meu hub interativo de links, redes sociais e projetos em formato Bento Grid" />
-    <title>Bento Bio - Links & Reviews Interativos</title>
+    <title>meFolio — Bento Grid Bio & Portfolio</title>
+    
+    <!-- SEO & Basic Meta -->
+    <meta name="description" content="Meu hub interativo de links, redes sociais, projetos e experiências profissionais no formato Bento Grid." />
+    <meta name="keywords" content="portfolio, bento grid, link in bio, desenvolvedor, designer, mefolio" />
+    <meta name="author" content="Luiz Appelt" />
+    
+    <!-- OpenGraph / WhatsApp / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="meFolio" />
+    <meta property="og:title" content="meFolio — Bento Grid Bio & Portfolio" />
+    <meta property="og:description" content="Meu hub interativo de links, redes sociais, projetos e experiências profissionais no formato Bento Grid." />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop" />
+    
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="meFolio — Bento Grid Bio & Portfolio" />
+    <meta name="twitter:description" content="Meu hub interativo de links, redes sociais, projetos e experiências profissionais no formato Bento Grid." />
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop" />
+
+    <!-- PWA & Mobile Web App Settings -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#08090d" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="meFolio" />
     
     <!-- Google Fonts Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,5 +42,14 @@
   <body class="bg-zinc-950">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>
