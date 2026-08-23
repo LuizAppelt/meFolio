@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Settings, Share2, Move, Eye, Palette, Lock, UserCheck } from 'lucide-react';
+import { Settings, Share2, Move, Eye, Palette, Lock, UserCheck, LogOut, Sparkles, Loader2 } from 'lucide-react';
 import type { 
   UserProfile, 
   AnyBentoCard, 
@@ -31,8 +31,12 @@ import { EditModal } from './components/modals/EditModal';
 import { ContactModal } from './components/modals/ContactModal';
 import { ThemeModal } from './components/modals/ThemeModal';
 import { CardEditModal } from './components/modals/CardEditModal';
+import { useAuth } from './context/AuthContext';
+import { profileService } from './services/profileService';
 
 export function App() {
+  const { user, loading: authLoading, isConfigured, signInWithGoogle, signOut } = useAuth();
+
   // LocalStorage keys
   const PROFILE_KEY = 'bento_bio_profile_v5';
   const CARDS_KEY = 'bento_bio_cards_v5';
@@ -82,8 +86,82 @@ export function App() {
     return saved ? JSON.parse(saved) : defaultAnalytics;
   });
 
+  // URL Query / Handle Parsing
+  const [targetHandle, setTargetHandle] = useState<string | null>(null);
+  const [isLoadingCloud, setIsLoadingCloud] = useState(false);
+  const [isOwner, setIsOwner] = useState(true);
+
   // Visitor Preview Mode
   const [isVisitorMode, setIsVisitorMode] = useState(false);
+
+  // 1. Detect handle from URL (e.g. ?u=alexandre or /u/alexandre)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const uParam = params.get('u');
+    if (uParam) {
+      setTargetHandle(uParam);
+    } else {
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      if (pathParts[0] === 'u' && pathParts[1]) {
+        setTargetHandle(pathParts[1]);
+      }
+    }
+  }, []);
+
+  // 2. Fetch cloud data when targetHandle or logged in user changes
+  useEffect(() => {
+    async function loadCloudProfile() {
+      if (!isConfigured) return;
+
+      if (targetHandle) {
+        setIsLoadingCloud(true);
+        const data = await profileService.fetchByHandle(targetHandle);
+        setIsLoadingCloud(false);
+
+        if (data) {
+          setProfile(data.profile);
+          setCards(data.cards);
+          if (data.themeId) {
+            const found = themes.find(t => t.id === data.themeId);
+            if (found) setTheme(found);
+          }
+          if (data.typography) setTypography(data.typography);
+          if (data.visibility) setVisibility(data.visibility);
+          if (data.customTheme) setCustomTheme(data.customTheme);
+          if (data.analytics) setAnalytics(data.analytics);
+
+          // Check if logged in user owns this profile
+          if (user && user.user_metadata?.user_name === targetHandle) {
+            setIsOwner(true);
+          } else {
+            setIsOwner(false);
+            setIsVisitorMode(true);
+          }
+        }
+      } else if (user) {
+        // Logged in owner without query param
+        setIsLoadingCloud(true);
+        const data = await profileService.fetchByUserId(user.id);
+        setIsLoadingCloud(false);
+
+        if (data) {
+          setProfile(data.profile);
+          setCards(data.cards);
+          if (data.themeId) {
+            const found = themes.find(t => t.id === data.themeId);
+            if (found) setTheme(found);
+          }
+          if (data.typography) setTypography(data.typography);
+          if (data.visibility) setVisibility(data.visibility);
+          if (data.customTheme) setCustomTheme(data.customTheme);
+          if (data.analytics) setAnalytics(data.analytics);
+          setIsOwner(true);
+        }
+      }
+    }
+
+    loadCloudProfile();
+  }, [targetHandle, user, isConfigured]);
 
   // Track page visit on mount
   useEffect(() => {
@@ -133,35 +211,58 @@ export function App() {
     isNew: false
   });
 
-  // Live Sync handlers
+  // Live Sync handlers (Local + Supabase Cloud)
   const handleSaveProfile = (newProfile: UserProfile) => {
     setProfile(newProfile);
     localStorage.setItem(PROFILE_KEY, JSON.stringify(newProfile));
+    if (user && isConfigured) {
+      profileService.saveProfile(user.id, newProfile, {
+        themeId: theme.id,
+        customTheme,
+        typography,
+        visibility
+      });
+    }
   };
 
   const handleSaveCards = (newCards: AnyBentoCard[]) => {
     setCards(newCards);
     localStorage.setItem(CARDS_KEY, JSON.stringify(newCards));
+    if (user && isConfigured) {
+      profileService.saveCards(user.id, newCards);
+    }
   };
 
   const handleSelectTheme = (newTheme: AppTheme) => {
     setTheme(newTheme);
     localStorage.setItem(THEME_KEY, newTheme.id);
+    if (user && isConfigured) {
+      profileService.saveProfile(user.id, profile, { themeId: newTheme.id });
+    }
   };
 
   const handleSaveTypography = (newTypo: TypographyConfig) => {
     setTypography(newTypo);
     localStorage.setItem(TYPO_KEY, JSON.stringify(newTypo));
+    if (user && isConfigured) {
+      profileService.saveProfile(user.id, profile, { typography: newTypo });
+    }
   };
 
   const handleSaveVisibility = (newVis: VisibilityConfig) => {
     setVisibility(newVis);
     localStorage.setItem(VIS_KEY, JSON.stringify(newVis));
+    if (user && isConfigured) {
+      profileService.saveProfile(user.id, profile, { visibility: newVis });
+    }
   };
 
   const handleSaveCustomTheme = (newCustom: CustomThemeConfig) => {
     setCustomTheme(newCustom);
     localStorage.setItem(CUSTOM_THEME_KEY, JSON.stringify(newCustom));
+    if (user && isConfigured) {
+      profileService.saveProfile(user.id, profile, { customTheme: newCustom });
+    }
   };
 
   const handleResetAnalytics = () => {
@@ -390,84 +491,161 @@ export function App() {
 
       {/* Top Navigation Control Bar */}
       <header className="sticky top-4 z-40 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4 flex items-center justify-between pointer-events-none">
-        {/* Visitor Mode Indicator / Mode Switch */}
-        <div className="pointer-events-auto">
-          <button
-            onClick={() => {
-              setIsVisitorMode(!isVisitorMode);
-              if (!isVisitorMode) setIsVisualEditMode(false);
-            }}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl backdrop-blur-xl border text-xs font-bold shadow-xl transition-all hover:scale-105 active:scale-95 ${
-              isVisitorMode
-                ? 'bg-emerald-500 text-zinc-950 border-emerald-400 ring-2 ring-emerald-400/40'
-                : 'bg-zinc-900/80 border-zinc-800 text-zinc-300 hover:text-white'
-            }`}
-            title="Alternar entre visualização pública do visitante e modo de edição do dono"
-          >
-            {isVisitorMode ? (
-              <>
-                <UserCheck className="w-3.5 h-3.5" />
-                <span>👁️ Visão do Visitante (Ativa)</span>
-              </>
-            ) : (
-              <>
-                <Lock className="w-3.5 h-3.5 text-indigo-400" />
-                <span>✏️ Modo Dono</span>
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* Owner Controls (Hidden in Visitor Mode) */}
-        {!isVisitorMode && (
-          <div className="flex items-center gap-2 pointer-events-auto">
-            {/* Unified Themes Button */}
+        {/* Left Side: Mode Indicator / Switch */}
+        <div className="pointer-events-auto flex items-center gap-2">
+          {isOwner ? (
             <button
-              onClick={() => setIsThemeOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold shadow-xl transition-all hover:scale-105"
-              title="Escolher estilo ou criar tema"
-            >
-              <Palette className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="hidden sm:inline">Temas</span>
-            </button>
-
-            {/* Direct Visual Grid Adjust Toggle */}
-            <button
-              onClick={() => setIsVisualEditMode(!isVisualEditMode)}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl backdrop-blur-xl border text-xs font-semibold shadow-xl transition-all hover:scale-105 ${
-                isVisualEditMode
-                  ? 'bg-amber-500 text-zinc-950 border-amber-400 font-bold ring-2 ring-amber-400/50'
+              onClick={() => {
+                setIsVisitorMode(!isVisitorMode);
+                if (!isVisitorMode) setIsVisualEditMode(false);
+              }}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl backdrop-blur-xl border text-xs font-bold shadow-xl transition-all hover:scale-105 active:scale-95 ${
+                isVisitorMode
+                  ? 'bg-emerald-500 text-zinc-950 border-emerald-400 ring-2 ring-emerald-400/40'
                   : 'bg-zinc-900/80 border-zinc-800 text-zinc-300 hover:text-white'
               }`}
-              title="Adicionar, excluir e arrastar blocos diretamente na grade"
+              title="Alternar entre visualização pública e modo de edição"
             >
-              {isVisualEditMode ? <Eye className="w-3.5 h-3.5" /> : <Move className="w-3.5 h-3.5 text-amber-400" />}
-              <span className="hidden sm:inline">{isVisualEditMode ? 'Visualizar Página' : 'Ajustar Grade'}</span>
+              {isVisitorMode ? (
+                <>
+                  <UserCheck className="w-3.5 h-3.5" />
+                  <span>👁️ Visão do Visitante</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>✏️ Modo Dono</span>
+                </>
+              )}
             </button>
+          ) : (
+            <a
+              href="/"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400 text-xs font-bold shadow-xl transition-all hover:scale-105"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Criar meu meFolio Grátis</span>
+            </a>
+          )}
 
-            {/* Share Button */}
-            {visibility.showShareButton && (
+          {isLoadingCloud && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-900/80 text-zinc-400 text-xs font-mono border border-zinc-800">
+              <Loader2 className="w-3 h-3 animate-spin text-indigo-400" />
+              <span>Sincronizando...</span>
+            </div>
+          )}
+        </div>
+
+        {/* Right Side: Owner Controls & Google Auth Button */}
+        <div className="flex items-center gap-2 pointer-events-auto">
+          {/* Owner Tools (Hidden in Visitor Mode) */}
+          {isOwner && !isVisitorMode && (
+            <>
+              {/* Unified Themes Button */}
               <button
-                onClick={() => setIsShareOpen(true)}
+                onClick={() => setIsThemeOpen(true)}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold shadow-xl transition-all hover:scale-105"
-                title="Compartilhar página e QR Code com logo"
+                title="Escolher estilo ou criar tema"
               >
-                <Share2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Compartilhar</span>
+                <Palette className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="hidden sm:inline">Temas</span>
               </button>
-            )}
 
-            {/* General Customizer Button */}
+              {/* Direct Visual Grid Adjust Toggle */}
+              <button
+                onClick={() => setIsVisualEditMode(!isVisualEditMode)}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl backdrop-blur-xl border text-xs font-semibold shadow-xl transition-all hover:scale-105 ${
+                  isVisualEditMode
+                    ? 'bg-amber-500 text-zinc-950 border-amber-400 font-bold ring-2 ring-amber-400/50'
+                    : 'bg-zinc-900/80 border-zinc-800 text-zinc-300 hover:text-white'
+                }`}
+                title="Adicionar, excluir e arrastar blocos diretamente na grade"
+              >
+                {isVisualEditMode ? <Eye className="w-3.5 h-3.5" /> : <Move className="w-3.5 h-3.5 text-amber-400" />}
+                <span className="hidden sm:inline">{isVisualEditMode ? 'Visualizar Página' : 'Ajustar Grade'}</span>
+              </button>
+
+              {/* Share Button */}
+              {visibility.showShareButton && (
+                <button
+                  onClick={() => setIsShareOpen(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold shadow-xl transition-all hover:scale-105"
+                  title="Compartilhar página e QR Code com logo"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Compartilhar</span>
+                </button>
+              )}
+
+              {/* General Customizer Button */}
+              <button
+                onClick={() => setIsEditOpen(true)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-semibold shadow-xl shadow-indigo-950/40 transition-all hover:scale-105 active:scale-95"
+                title="Abrir Central de Personalização"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                <span>Personalizar</span>
+              </button>
+            </>
+          )}
+
+          {/* Google Auth Button / User Session */}
+          {user ? (
+            <div className="flex items-center gap-2 pl-1">
+              <div className="flex items-center gap-2 p-1 pl-2 pr-3 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-xl">
+                {user.user_metadata?.avatar_url || user.user_metadata?.picture ? (
+                  <img
+                    src={user.user_metadata.avatar_url || user.user_metadata.picture}
+                    alt="User"
+                    className="w-6 h-6 rounded-full object-cover border border-indigo-500/40"
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center">
+                    {user.email?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="text-xs font-semibold text-zinc-200 hidden md:inline truncate max-w-[120px]">
+                  {user.user_metadata?.full_name || user.email?.split('@')[0]}
+                </span>
+                <button
+                  onClick={signOut}
+                  className="p-1 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors ml-1"
+                  title="Sair da conta"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ) : (
             <button
-              onClick={() => setIsEditOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-semibold shadow-xl shadow-indigo-950/40 transition-all hover:scale-105 active:scale-95"
-              title="Abrir Central de Personalização"
+              onClick={signInWithGoogle}
+              disabled={authLoading}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-700 text-white text-xs font-semibold shadow-xl transition-all hover:scale-105 active:scale-95"
+              title="Entrar com sua conta Google"
             >
-              <Settings className="w-3.5 h-3.5" />
-              <span>Personalizar</span>
+              {/* Google G Logo */}
+              <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                />
+              </svg>
+              <span>Entrar com Google</span>
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </header>
 
       {/* Main Container: 1/3 Fixed Left Sidebar & 2/3 Scrollable Right Content */}
@@ -503,7 +681,7 @@ export function App() {
             cards={cards} 
             theme={activeThemeObject}
             activeCategory={activeCategory}
-            isVisualEditMode={!isVisitorMode && isVisualEditMode}
+            isVisualEditMode={isOwner && !isVisitorMode && isVisualEditMode}
             expandedCardId={expandedCardId}
             onToggleExpand={handleToggleExpand}
             onResizeCard={handleResizeCard}
@@ -516,6 +694,19 @@ export function App() {
         </main>
 
       </div>
+
+      {/* Footer Branding for Visitors */}
+      {!isOwner && (
+        <footer className="relative z-10 py-6 text-center text-xs text-zinc-500">
+          <a
+            href="/"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900/80 border border-zinc-800 text-zinc-300 hover:text-white transition-colors"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Feito com <strong>meFolio</strong> — Crie o seu gratuitamente</span>
+          </a>
+        </footer>
+      )}
 
       {/* MODALS */}
       <ReviewModal 
